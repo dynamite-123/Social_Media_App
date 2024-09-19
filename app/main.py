@@ -98,4 +98,4 @@ def update_post(id: int, updated_post: Post):
     if updated_post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"post with id {id} was not found")
-    return {"data": updated_post}
+    return {"detail": updated_post}
