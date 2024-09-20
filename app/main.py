@@ -1,13 +1,13 @@
 from typing import Optional
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
 from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
 from . import models
-from .database import engine, SessionLocal # type: ignore
-
+from .database import engine, SessionLocal  # type: ignore
+from sqlalchemy.orm import Session
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -22,7 +22,7 @@ def get_db():
     try:
         yield db
     finally:
-        db.close()
+        db.close()  
 
 
 class Post(BaseModel):
