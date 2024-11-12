@@ -37,9 +37,9 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db),
     # new_post = cursor.fetchone()
     # conn.commit()
 
-    # new_post = models.Post(title=post.title, content=post.content, published=post.published) OR
+    # new_post = models.Post(title=post.title, content=post.content, published=post.published)
     print(current_user.email)
-    new_post = models.Post(**post.dict())
+    new_post = models.Post(owner_id=current_user.id, **post.dict())
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -52,12 +52,18 @@ def delete_post(id: int, db: Session = Depends(get_db), current_user: int = Depe
     #     """DELETE FROM posts WHERE id = %s RETURNING *""", (str(id)))
     # deleted_post = cursor.fetchone()
     # conn.commit()
-    deleted_post = db.query(models.Post).filter(
-        models.Post.id == id)  # deleted_post is the query
-    if not deleted_post.first():  # OR deleted_post:
+    post_query = db.query(models.Post).filter(models.Post.id == id)
+    post = post_query.first()
+
+    if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"post with id {id} was not found")
-    deleted_post.delete(synchronize_session=False)
+
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action")
+    
+    post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -74,6 +80,9 @@ def update_post(id: int, updated_post: schemas.PostCreate, db: Session = Depends
     if post == None:  # or updated_post
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"post with id {id} was not found.")
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Not authorized to perform requested action")
     post_query.update(updated_post.dict(), synchronize_session=False)
     db.commit()
     return post_query.first()
